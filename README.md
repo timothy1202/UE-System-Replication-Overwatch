@@ -6,7 +6,7 @@
 ---
 
 ## 🛠️ Tech Stack
-* **Engine**: Unreal Engine 5 (UE5)
+* **Engine**: Unreal Engine 5.5 (UE5)
 * **Language**: C++
 * **Architecture**: Component-Based Design / Data-Oriented (ECS Concept)
 * **Key Focus**: Movement Sync, Ability System, Collision Logic
