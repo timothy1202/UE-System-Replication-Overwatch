@@ -1,5 +1,3 @@
-# UE-System-Replication-Overwatch
-"Re-implementing Overwatch 2's core mechanics and hero abilities in Unreal Engine 5 C++."
 1. 프로젝트 타이틀 및 소개
 🚀 UE-System-Replication-Overwatch
 Overwatch 2 Mechanics Analysis & Re-implementation in Unreal Engine 5
