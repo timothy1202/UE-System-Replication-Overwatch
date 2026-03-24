@@ -4,6 +4,7 @@
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #include<Camera/CameraComponent.h>
 
@@ -67,6 +68,8 @@ void AWidowMaker::StartAiming()
     {
         FollowCamera->SetFieldOfView(ZoomFOV);
     }
+
+    GetCharacterMovement()->MaxWalkSpeed = AimMovementSpeed;
 }
 
 void AWidowMaker::StopAiming()
@@ -76,6 +79,7 @@ void AWidowMaker::StopAiming()
     {
         FollowCamera->SetFieldOfView(DefaultFOV);
     }
+    GetCharacterMovement()->MaxWalkSpeed = NormalMovementSpeed;
 }
 
 void AWidowMaker::Fire()

@@ -47,11 +47,18 @@ protected:
     UPROPERTY(VisibleAnywhere)
     class USpringArmComponent* SpringArm;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widow | Aim")
+    UPROPERTY(BlueprintReadOnly, Category = "Combat")
     bool bIsAiming;
 
+    // 조준 시 이동 속도 설정
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    float AimMovementSpeed = 100.f;
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    float NormalMovementSpeed = 400.f;
+
     UPROPERTY(EditAnywhere, Category = "Widow | Aim")
-    float ZoomFOV = 30.f;
+    float ZoomFOV = 100.f;
 
     float DefaultFOV;
 
@@ -72,4 +79,7 @@ protected:
 public:
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    bool GetIsAiming() const { return bIsAiming; }
 };
