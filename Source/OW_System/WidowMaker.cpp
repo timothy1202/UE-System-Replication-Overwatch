@@ -5,6 +5,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/Widget.h" // 위젯 가시성 제어를 위해 필요
 
 #include<Camera/CameraComponent.h>
 
@@ -31,7 +33,7 @@ AWidowMaker::AWidowMaker()
 
     // 3. 줌 관련 설정
     DefaultFOV = 90.f;
-    ZoomFOV = 400.f;
+    ZoomFOV = 30.0f;
 }
 
 void AWidowMaker::BeginPlay()
@@ -52,6 +54,19 @@ void AWidowMaker::BeginPlay()
     {
         DefaultFOV = FollowCamera->FieldOfView;
     }
+
+    // 1. 내가 조종하는 로컬 플레이어일 때만 UI를 띄웁니다. (멀티플레이 고려)
+    if (IsLocallyControlled() && HUDWidgetClass)
+    {
+        // 2. 위젯 생성
+        CurrentHUD = CreateWidget<UUserWidget>(GetWorld(), HUDWidgetClass);
+
+        // 3. 화면(Viewport)에 추가
+        if (CurrentHUD)
+        {
+            CurrentHUD->AddToViewport();
+        }
+    }
 }
 
 void AWidowMaker::Tick(float DeltaTime)
@@ -62,6 +77,18 @@ void AWidowMaker::Tick(float DeltaTime)
 void AWidowMaker::StartAiming()
 {
     bIsAiming = true;
+
+    // UI 제어 로직 추가
+    if (CurrentHUD)
+    {
+        // WBP에서 'is Variable' 체크한 이름을 가져옵니다.
+        UWidget* ScopeImg = CurrentHUD->GetWidgetFromName(TEXT("SniperScope"));
+        UWidget* CrosshairImg = CurrentHUD->GetWidgetFromName(TEXT("Crosshair"));
+
+        if (ScopeImg) ScopeImg->SetVisibility(ESlateVisibility::Visible);
+        if (CrosshairImg) CrosshairImg->SetVisibility(ESlateVisibility::Hidden);
+    }
+
     // 카메라 컴포넌트를 찾아 FOV를 줄입니다 (확대 효과)
     // 실제로는 Smooth하게 변하도록 Timeline이나 Lerp를 쓰는 게 좋지만 일단 기초부터!
     if (FollowCamera)
@@ -75,6 +102,16 @@ void AWidowMaker::StartAiming()
 void AWidowMaker::StopAiming()
 {
     bIsAiming = false;
+
+    if (CurrentHUD)
+    {
+        UWidget* ScopeImg = CurrentHUD->GetWidgetFromName(TEXT("SniperScope"));
+        UWidget* CrosshairImg = CurrentHUD->GetWidgetFromName(TEXT("Crosshair"));
+
+        if (ScopeImg) ScopeImg->SetVisibility(ESlateVisibility::Hidden);
+        if (CrosshairImg) CrosshairImg->SetVisibility(ESlateVisibility::Visible);
+    }
+
     if (FollowCamera)
     {
         FollowCamera->SetFieldOfView(DefaultFOV);

@@ -47,6 +47,14 @@ protected:
     UPROPERTY(VisibleAnywhere)
     class USpringArmComponent* SpringArm;
 
+    // 에디터의 'Details' 창에서 WBP_PlayerHUD를 선택할 수 있게 해줍니다.
+    UPROPERTY(EditAnywhere, Category = "UI")
+    TSubclassOf<class UUserWidget> HUDWidgetClass;
+
+    // 생성된 위젯을 담아둘 변수 (나중에 조준 상태에 따라 조절할 때 사용)
+    UPROPERTY()
+    class UUserWidget* CurrentHUD;
+
     UPROPERTY(BlueprintReadOnly, Category = "Combat")
     bool bIsAiming;
 
