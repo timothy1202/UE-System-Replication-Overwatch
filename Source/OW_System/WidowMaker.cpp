@@ -17,6 +17,7 @@ AWidowMaker::AWidowMaker()
     SpringArm->SetupAttachment(RootComponent);
     SpringArm->TargetArmLength = 400.0f;        // 캐릭터와의 거리
     SpringArm->bUsePawnControlRotation = true; // 컨트롤러 회전에 따라 셀카봉 회전
+    SpringArm->SocketOffset = FVector(0.f, 75.0f, 0.f);
 
     // 2. 카메라 설정
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -30,7 +31,7 @@ AWidowMaker::AWidowMaker()
 
     // 3. 줌 관련 설정
     DefaultFOV = 90.f;
-    ZoomFOV = 30.f;
+    ZoomFOV = 400.f;
 }
 
 void AWidowMaker::BeginPlay()
@@ -56,7 +57,6 @@ void AWidowMaker::BeginPlay()
 void AWidowMaker::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AWidowMaker::StartAiming()
@@ -84,44 +84,37 @@ void AWidowMaker::StopAiming()
 
 void AWidowMaker::Fire()
 {
-    // 1. 월드가 유효한지 확인
     UWorld* World = GetWorld();
-    if (World == nullptr) return;
+    // GetMesh()는 캐릭터가 기본으로 가지고 있는 스켈레탈 메쉬 컴포넌트입니다.
+    if (!World || !FollowCamera || !GetMesh()) return;
 
-    // 2. 시작 지점(카메라 위치)과 방향 구하기
-    FVector Start = FollowCamera->GetComponentLocation();
+    // 1. 카메라 판정 정보
+    FVector CameraStart = FollowCamera->GetComponentLocation();
     FVector ForwardVector = FollowCamera->GetForwardVector();
+    FVector TraceEnd = CameraStart + (ForwardVector * 10000.f);
 
-    // 3. 끝 지점 계산 (시작 지점 + 방향 * 사거리) - 10,000 유닛(100미터)
-    FVector End = Start + (ForwardVector * 10000.f);
+    // 2. 캐릭터 메쉬에 박아둔 소켓 정보 가져오기
+    FTransform MuzzleTransform = GetMesh()->GetSocketTransform(FName("Fire_Socket"));
+    FVector MuzzleLocation = MuzzleTransform.GetLocation();
 
-    // 4. 충돌 정보 저장용 변수
+    // 3. 라인 트레이스 (판정은 카메라 기준)
     FHitResult HitResult;
-
-    // 5. 충돌 설정 (나 자신은 맞지 않도록 설정)
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(this);
 
-    // 6. 실제 레이저 발사! (Line Trace)
-    bool bHit = World->LineTraceSingleByChannel(
-        HitResult,      // 결과 담기
-        Start,          // 시작점
-        End,            // 끝점
-        ECC_Visibility, // 가시성 채널 (보이는 건 다 맞음)
-        Params          // 설정
-    );
+    bool bHit = World->LineTraceSingleByChannel(HitResult, CameraStart, TraceEnd, ECC_Visibility, Params);
 
-    // 7. 결과 확인 (디버그용 선 그리기)
-    DrawDebugLine(World, Start, End, FColor::Red, false, 2.0f, 0, 1.0f);
+    // 4. 시각적 피드백 (총구 소켓 -> 충돌 지점)
+    FVector ActualLineEnd = bHit ? HitResult.ImpactPoint : TraceEnd;
+
+    // 노란색 선이 총구에서 뻗어나가도록 그림
+    DrawDebugLine(World, MuzzleLocation, ActualLineEnd, FColor::Yellow, false, 1.0f, 0, 2.0f);
 
     if (bHit)
     {
-        // 맞은 액터의 이름을 출력해봅시다!
-        AActor* HitActor = HitResult.GetActor();
-        if (HitActor)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("맞은 대상: %s"), *HitActor->GetName());
-        }
+        // 맞은 지점에 이펙트 생성 (예: 스파크)
+        // UGameplayStatics::SpawnEmitterAtLocation(World, HitFX, HitResult.ImpactPoint);
+        UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitResult.GetActor()->GetName());
     }
 }
 

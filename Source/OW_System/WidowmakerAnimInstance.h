@@ -26,5 +26,8 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
     bool bIsAiming;
-	
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+    bool bIsFalling;
+
 };

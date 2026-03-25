@@ -10,19 +10,27 @@ void UWidowmakerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
     Super::NativeUpdateAnimation(DeltaSeconds);
 
-    // 중복되는 로직을 정리하여 최적화한 코드입니다.
     AWidowMaker* Widow = Cast<AWidowMaker>(TryGetPawnOwner());
-
     if (Widow)
     {
-        // 1. 속도 계산
-        GroundSpeed = Widow->GetVelocity().Size();
+        UCharacterMovementComponent* Movement = Widow->GetCharacterMovement();
+        if (Movement)
+        {
+            // 1. 기본 물리 데이터 업데이트
+            GroundSpeed = Widow->GetVelocity().Size();
+            bIsFalling = Movement->IsFalling();
+            bIsAiming = Widow->GetIsAiming();
 
-        // 2. 이동 여부 판단 (CharacterMovement 활용)
-        bShouldMove = (GroundSpeed > 3.0f) &&
-            (Widow->GetCharacterMovement()->GetCurrentAcceleration() != FVector::ZeroVector);
+            // 2. 이동 여부 판단
+            bShouldMove = (GroundSpeed > 3.0f) &&
+                (Movement->GetCurrentAcceleration() != FVector::ZeroVector);
+     
+        }
+    }
 
-        // 3. 조준 상태 가져오기
-        bIsAiming = Widow->GetIsAiming();
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Yellow,
+            FString::Printf(TEXT("IsFalling: %s, Speed: %f"), bIsFalling ? TEXT("True") : TEXT("False"), GroundSpeed));
     }
 }
