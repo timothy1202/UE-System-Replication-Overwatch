@@ -65,10 +65,37 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Combat")
     float NormalMovementSpeed = 400.f;
 
-    UPROPERTY(EditAnywhere, Category = "Widow | Aim")
+    // 조준 시 시야각 (값이 작을수록 크게 보임)
+    UPROPERTY(EditAnywhere, Category = "Combat | Zoom")
     float ZoomFOV = 100.f;
 
-    float DefaultFOV;
+    UPROPERTY(EditAnywhere, Category = "Combat | Zoom")
+    float DefaultFOV = 90.f;
+
+    // 줌 속도 (값이 클수록 빠르게 줌이 됨)
+    UPROPERTY(EditAnywhere, Category = "Combat | Zoom")
+    float ZoomInterpSpeed = 10.f;
+
+    // 총구 소켓 이름 (언리얼 에디터의 스켈레탈 메시 소켓 이름과 일치해야 함)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    FName MuzzleSocketName = TEXT("Fire_Socket");
+
+    // 최대 사거리 (100m)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float TraceDistance = 10000.f;
+
+    // 디버그 라인 표시 여부
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    bool bDrawDebug = true;
+
+    // 일반 사격 애니메이션
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    class UAnimMontage* HipFireMontage;
+
+    // 저격(조준) 사격 애니메이션
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    class UAnimMontage* ScopedFireMontage;
+
 
     // --- 함수 영역 ---
     virtual void BeginPlay() override;

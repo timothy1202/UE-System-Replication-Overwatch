@@ -7,6 +7,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Widget.h" // 위젯 가시성 제어를 위해 필요
+#include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 
 #include<Camera/CameraComponent.h>
 
@@ -72,6 +74,19 @@ void AWidowMaker::BeginPlay()
 void AWidowMaker::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+    if (FollowCamera)
+    {
+        // 1. 현재 상태에 따른 목표 FOV 결정
+        float TargetFOV = bIsAiming ? ZoomFOV : DefaultFOV;
+
+        // 2. 현재 FOV에서 목표 FOV로 부드럽게 보간 (FInterpTo)
+        float CurrentFOV = FollowCamera->FieldOfView;
+        float NewFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, ZoomInterpSpeed);
+
+        // 3. 카메라에 새로운 FOV 적용
+        FollowCamera->SetFieldOfView(NewFOV);
+    }
 }
 
 void AWidowMaker::StartAiming()
@@ -87,13 +102,6 @@ void AWidowMaker::StartAiming()
 
         if (ScopeImg) ScopeImg->SetVisibility(ESlateVisibility::Visible);
         if (CrosshairImg) CrosshairImg->SetVisibility(ESlateVisibility::Hidden);
-    }
-
-    // 카메라 컴포넌트를 찾아 FOV를 줄입니다 (확대 효과)
-    // 실제로는 Smooth하게 변하도록 Timeline이나 Lerp를 쓰는 게 좋지만 일단 기초부터!
-    if (FollowCamera)
-    {
-        FollowCamera->SetFieldOfView(ZoomFOV);
     }
 
     GetCharacterMovement()->MaxWalkSpeed = AimMovementSpeed;
@@ -112,26 +120,37 @@ void AWidowMaker::StopAiming()
         if (CrosshairImg) CrosshairImg->SetVisibility(ESlateVisibility::Visible);
     }
 
-    if (FollowCamera)
-    {
-        FollowCamera->SetFieldOfView(DefaultFOV);
-    }
     GetCharacterMovement()->MaxWalkSpeed = NormalMovementSpeed;
 }
 
 void AWidowMaker::Fire()
 {
     UWorld* World = GetWorld();
-    // GetMesh()는 캐릭터가 기본으로 가지고 있는 스켈레탈 메쉬 컴포넌트입니다.
     if (!World || !FollowCamera || !GetMesh()) return;
+
+    // 1. 애니메이션 재생 로직
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    if (AnimInstance)
+    {
+        // 조준 상태에 따라 재생할 몽타주 선택
+        UAnimMontage* MontageToPlay = bIsAiming ? ScopedFireMontage : HipFireMontage;
+
+        if (MontageToPlay)
+        {
+            AnimInstance->Montage_Play(MontageToPlay);
+        }
+    }
 
     // 1. 카메라 판정 정보
     FVector CameraStart = FollowCamera->GetComponentLocation();
     FVector ForwardVector = FollowCamera->GetForwardVector();
-    FVector TraceEnd = CameraStart + (ForwardVector * 10000.f);
+
+    // [수정] 하드코딩된 10000.f 대신 TraceDistance 변수 활용!
+    FVector TraceEnd = CameraStart + (ForwardVector * TraceDistance);
 
     // 2. 캐릭터 메쉬에 박아둔 소켓 정보 가져오기
-    FTransform MuzzleTransform = GetMesh()->GetSocketTransform(FName("Fire_Socket"));
+    // [수정] TEXT("Fire_Socket") 대신 MuzzleSocketName 변수 활용!
+    FTransform MuzzleTransform = GetMesh()->GetSocketTransform(MuzzleSocketName);
     FVector MuzzleLocation = MuzzleTransform.GetLocation();
 
     // 3. 라인 트레이스 (판정은 카메라 기준)
@@ -144,13 +163,15 @@ void AWidowMaker::Fire()
     // 4. 시각적 피드백 (총구 소켓 -> 충돌 지점)
     FVector ActualLineEnd = bHit ? HitResult.ImpactPoint : TraceEnd;
 
-    // 노란색 선이 총구에서 뻗어나가도록 그림
-    DrawDebugLine(World, MuzzleLocation, ActualLineEnd, FColor::Yellow, false, 1.0f, 0, 2.0f);
+    // [수정] bDrawDebug가 true일 때만 디버그 라인을 그리도록 활용!
+    if (bDrawDebug)
+    {
+        DrawDebugLine(World, MuzzleLocation, ActualLineEnd, FColor::Yellow, false, 1.0f, 0, 2.0f);
+    }
 
     if (bHit)
     {
-        // 맞은 지점에 이펙트 생성 (예: 스파크)
-        // UGameplayStatics::SpawnEmitterAtLocation(World, HitFX, HitResult.ImpactPoint);
+        // ... 생략 (대미지 로직 등)
         UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitResult.GetActor()->GetName());
     }
 }
